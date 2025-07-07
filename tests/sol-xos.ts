@@ -14,7 +14,7 @@ describe("sol-xos", () => {
   let playerTwo: Keypair = Keypair.generate();
   let wagerAmount = (1 * LAMPORTS_PER_SOL);
   const uniqueId = new anchor.BN(Date.now());
-  const [pda] = PublicKey.findProgramAddressSync([Buffer.from('game'), wallet.publicKey.toBuffer(), uniqueId.toBuffer("le", 8),], program.programId);
+  const [pda] = PublicKey.findProgramAddressSync([Buffer.from('tictactoe'), wallet.publicKey.toBuffer(), uniqueId.toBuffer("le", 8)], program.programId);
 
   before(async () => {
     const airdropSignature = await provider.connection.requestAirdrop(
@@ -38,7 +38,12 @@ describe("sol-xos", () => {
         playerOne: wallet.publicKey,
       })
       .signers([wallet.payer])
-      .rpc();
+      .rpc().catch((err) => {
+        getLogs(provider.connection, tx).then((logs) => {
+          console.log("Transaction logs:", logs);
+        });
+        throw err;
+      });
 
     expect(tx).to.be.a("string");
 

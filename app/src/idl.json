@@ -1,0 +1,375 @@
+{
+  "address": "7z3jyerk9MU8GYZK5N3jja6q9zfCtCWEPk1JNh4htY3P",
+  "metadata": {
+    "name": "sol_xos",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "claim_draw_stake",
+      "discriminator": [
+        28,
+        186,
+        145,
+        21,
+        60,
+        120,
+        237,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_winnings",
+      "discriminator": [
+        161,
+        215,
+        24,
+        59,
+        14,
+        236,
+        242,
+        221
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_game",
+      "discriminator": [
+        124,
+        69,
+        75,
+        66,
+        184,
+        220,
+        72,
+        206
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  99,
+                  116,
+                  97,
+                  99,
+                  116,
+                  111,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_one"
+              },
+              {
+                "kind": "arg",
+                "path": "_unique_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_one",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_unique_id",
+          "type": "u64"
+        },
+        {
+          "name": "stake_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "join_game",
+      "discriminator": [
+        107,
+        112,
+        18,
+        38,
+        56,
+        173,
+        60,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "player_two",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "stake_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "make_move",
+      "discriminator": [
+        78,
+        77,
+        152,
+        203,
+        222,
+        211,
+        208,
+        233
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "row",
+          "type": "u8"
+        },
+        {
+          "name": "col",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Game",
+      "discriminator": [
+        27,
+        90,
+        166,
+        125,
+        74,
+        100,
+        121,
+        18
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "GameAlreadyStartedOrFull",
+      "msg": "The game is not in the 'WaitingForPlayerTwo' state."
+    },
+    {
+      "code": 6001,
+      "name": "CannotJoinOwnGame",
+      "msg": "You cannot join your own game."
+    },
+    {
+      "code": 6002,
+      "name": "StakeMismatch",
+      "msg": "The stake amount does not match the initial stake."
+    },
+    {
+      "code": 6003,
+      "name": "GameNotActive",
+      "msg": "The game is not active."
+    },
+    {
+      "code": 6004,
+      "name": "NotYourTurn",
+      "msg": "It's not your turn."
+    },
+    {
+      "code": 6005,
+      "name": "InvalidMoveCoordinates",
+      "msg": "Invalid move coordinates. Row and column must be between 0 and 2."
+    },
+    {
+      "code": 6006,
+      "name": "CellAlreadyOccupied",
+      "msg": "The selected cell is already occupied."
+    },
+    {
+      "code": 6007,
+      "name": "GameNotEnded",
+      "msg": "The game has not ended yet."
+    },
+    {
+      "code": 6008,
+      "name": "NotTheWinner",
+      "msg": "You are not the winner of this game."
+    },
+    {
+      "code": 6009,
+      "name": "ZeroStakeNotAllowed",
+      "msg": "Stake amount cannot be zero."
+    },
+    {
+      "code": 6010,
+      "name": "GameNotDraw",
+      "msg": "The game is not a draw."
+    },
+    {
+      "code": 6011,
+      "name": "NotAPlayer",
+      "msg": "You are not a player in this game."
+    }
+  ],
+  "types": [
+    {
+      "name": "Game",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player_one",
+            "type": "pubkey"
+          },
+          {
+            "name": "player_two",
+            "type": "pubkey"
+          },
+          {
+            "name": "turn",
+            "type": "pubkey"
+          },
+          {
+            "name": "board",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    {
+                      "option": {
+                        "defined": {
+                          "name": "PlayerMark"
+                        }
+                      }
+                    },
+                    3
+                  ]
+                },
+                3
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "GameState"
+              }
+            }
+          },
+          {
+            "name": "pot_amount",
+            "type": "u64"
+          },
+          {
+            "name": "winner",
+            "type": {
+              "option": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "WaitingForPlayerTwo"
+          },
+          {
+            "name": "Playing"
+          },
+          {
+            "name": "Ended"
+          },
+          {
+            "name": "Draw"
+          },
+          {
+            "name": "Claimed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerMark",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "X"
+          },
+          {
+            "name": "O"
+          }
+        ]
+      }
+    }
+  ]
+}

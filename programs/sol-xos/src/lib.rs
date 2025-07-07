@@ -333,6 +333,7 @@ pub struct JoinGame<'info> {
 
 // Context for the `make_move` instruction
 #[derive(Accounts)]
+#[instruction(row: u8, col: u8)]
 pub struct MakeMove<'info> {
     // Game account: Must be mutable to update the board and turn
     #[account(mut)]
