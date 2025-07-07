@@ -13,7 +13,8 @@ describe("sol-xos", () => {
 
   let playerTwo: Keypair = Keypair.generate();
   let wagerAmount = (1 * LAMPORTS_PER_SOL);
-  const [pda] = PublicKey.findProgramAddressSync([Buffer.from('game'), wallet.publicKey.toBuffer()], program.programId);
+  const uniqueId = new anchor.BN(Date.now());
+  const [pda] = PublicKey.findProgramAddressSync([Buffer.from('game'), wallet.publicKey.toBuffer(), uniqueId.toBuffer("le", 8),], program.programId);
 
   before(async () => {
     const airdropSignature = await provider.connection.requestAirdrop(
@@ -32,7 +33,7 @@ describe("sol-xos", () => {
     const initBalance = await provider.connection.getBalance(wallet.publicKey);
 
     const tx = await program.methods
-      .createGame(new anchor.BN(wagerAmount))
+      .createGame(uniqueId, new anchor.BN(wagerAmount))
       .accounts({
         playerOne: wallet.publicKey,
       })

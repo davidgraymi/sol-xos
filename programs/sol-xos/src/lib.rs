@@ -12,7 +12,7 @@ pub mod sol_xos {
     use super::*;
 
     // Instruction to create a new game
-    pub fn create_game(ctx: Context<CreateGame>, stake_amount: u64) -> Result<()> {
+    pub fn create_game(ctx: Context<CreateGame>, _unique_id: u64, stake_amount: u64) -> Result<()> {
         // Get mutable references to the game account and player 1
         let game = &mut ctx.accounts.game;
         let player_one = &ctx.accounts.player_one;
@@ -299,14 +299,14 @@ fn check_draw(board: &[[Option<PlayerMark>; 3]; 3]) -> bool {
 
 // Context for the `create_game` instruction
 #[derive(Accounts)]
-#[instruction(stake_amount: u64)]
+#[instruction(_unique_id: u64, stake_amount: u64)]
 pub struct CreateGame<'info> {
     // Game account: A PDA derived from "game" seed and player_one's pubkey
     #[account(
         init,
         payer = player_one,
         space = 8 + Game::LEN, // 8 bytes for Anchor's discriminator + Game struct size
-        seeds = [Game::SEED_PREFIX, player_one.key().as_ref()], // Seeds for PDA derivation
+        seeds = [Game::SEED_PREFIX, player_one.key().as_ref(), _unique_id.to_le_bytes().as_ref()], // Seeds for PDA derivation
         bump
     )]
     pub game: Account<'info, Game>,
@@ -391,7 +391,7 @@ impl Game {
     // u64: 8 bytes
     // Option<Pubkey>: 32 bytes (Pubkey) + 1 byte (discriminator for Option) = 33 bytes
     const LEN: usize = 32 + 32 + 32 + (9 * (1 + 1)) + 1 + 8 + (32 + 1);
-    pub const SEED_PREFIX: &'static [u8; 4] = b"game";
+    pub const SEED_PREFIX: &'static [u8; 9] = b"tictactoe";
 }
 
 // Enum to represent the player's mark on the board
