@@ -1,6 +1,5 @@
 // Import necessary crates from Anchor and Solana SDK
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{program::invoke, program::invoke_signed, system_instruction};
 use anchor_lang::system_program;
 
 // Declare the program ID. This will be automatically replaced by Anchor during deployment.
@@ -30,7 +29,7 @@ pub mod sol_xos {
                 system_program.to_account_info(), // The system program is needed for SOL transfers.
                 anchor_lang::system_program::Transfer {
                     from: player_one.to_account_info(), // The user's account (sender).
-                    to: game.to_account_info(),  // The vault PDA (receiver).
+                    to: game.to_account_info(),         // The vault PDA (receiver).
                 },
             ),
             stake_amount,
@@ -83,7 +82,7 @@ pub mod sol_xos {
                 system_program.to_account_info(), // The system program is needed for SOL transfers.
                 anchor_lang::system_program::Transfer {
                     from: player_two.to_account_info(), // The user's account (sender).
-                    to: game.to_account_info(),  // The vault PDA (receiver).
+                    to: game.to_account_info(),         // The vault PDA (receiver).
                 },
             ),
             stake_amount,
@@ -107,10 +106,39 @@ pub mod sol_xos {
         // Get mutable references to the game account and the player making the move
         let game = &mut ctx.accounts.game;
         let player = &ctx.accounts.player;
+        let other = &ctx.accounts.other;
+        let mark: PlayerMark;
 
-        // Ensure the game is in the 'Playing' state
-        if game.state != GameState::Playing {
-            return Err(ErrorCode::GameNotActive.into());
+        if player.key() == game.player_one {
+            mark = PlayerMark::X;
+        } else if player.key() == game.player_two {
+            mark = PlayerMark::O;
+        } else {
+            return Err(ErrorCode::NotAPlayer.into());
+        }
+
+        if row == Game::FORFEIT && col == Game::FORFEIT {
+            // Transfer the pot to the winner and close the game account
+            let winner_account = other.to_account_info();
+            let loser_account = player.to_account_info();
+            let game_account = game.to_account_info();
+
+            // Transfer the pot from game to winner
+            game_account.sub_lamports(game.pot_amount)?;
+            winner_account.add_lamports(game.pot_amount)?;
+
+            // Close the game account and transfer the remaining rent back to the renter
+            match mark {
+                PlayerMark::X => game.close(loser_account.clone())?,
+                PlayerMark::O => game.close(winner_account.clone())?,
+            }
+
+            msg!(
+                "Player {} forfeited the game. Player {} wins!",
+                loser_account.key(),
+                winner_account.key()
+            );
+            return Ok(());
         }
 
         // Ensure it's the current player's turn
@@ -128,13 +156,6 @@ pub mod sol_xos {
             return Err(ErrorCode::CellAlreadyOccupied.into());
         }
 
-        // Determine the player's mark (X or O)
-        let mark = if player.key() == game.player_one {
-            PlayerMark::X
-        } else {
-            PlayerMark::O
-        };
-
         // Place the mark on the board
         game.board[row as usize][col as usize] = Some(mark);
 
@@ -144,10 +165,57 @@ pub mod sol_xos {
         if check_win(&game.board, mark) {
             game.winner = Some(player.key());
             game.state = GameState::Ended;
-            msg!("Player {} won the game!", player.key());
+
+            // Transfer the pot to the winner and close the game account
+            let winner_account = player.to_account_info();
+            let loser_account = other.to_account_info();
+            let game_account = game.to_account_info();
+            // let system_program = ctx.accounts.system_program.to_account_info();
+            let pot = game.pot_amount;
+
+            // Transfer the pot from game to winner
+            game_account.sub_lamports(game.pot_amount)?;
+            winner_account.add_lamports(game.pot_amount)?;
+
+            // Close the game account and transfer the remaining rent back to the renter
+            match mark {
+                PlayerMark::X => game.close(winner_account)?,
+                PlayerMark::O => game.close(loser_account)?,
+            }
+
+            msg!(
+                "Player {} won the game and received {} lamports!",
+                player.key(),
+                pot
+            );
         } else if check_draw(&game.board) {
             game.state = GameState::Draw;
-            msg!("The game is a draw!");
+
+            // Divide the pot between both players
+            let game_account = game.to_account_info();
+
+            let pot = game.pot_amount;
+            let half_pot = pot / 2;
+
+            game_account.sub_lamports(half_pot)?;
+            player.to_account_info().add_lamports(half_pot)?;
+
+            game.pot_amount -= half_pot;
+
+            game_account.sub_lamports(game.pot_amount)?;
+            other.to_account_info().add_lamports(game.pot_amount)?;
+
+            // Close the game account and transfer the remaining rent back to the renter
+            match mark {
+                PlayerMark::X => game.close(player.to_account_info())?,
+                PlayerMark::O => game.close(other.to_account_info())?,
+            }
+
+            msg!(
+                "The game is a draw! Pot split between {} and {}",
+                game.player_one,
+                game.player_two
+            );
         } else {
             // Switch turns
             game.turn = if game.turn == game.player_one {
@@ -155,94 +223,6 @@ pub mod sol_xos {
             } else {
                 game.player_one
             };
-        }
-
-        Ok(())
-    }
-
-    // Instruction to claim winnings after the game has ended
-    pub fn claim_winnings(ctx: Context<ClaimWinnings>) -> Result<()> {
-        // Get mutable references to the game account and the winner
-        let game = &mut ctx.accounts.game;
-        let winner = &mut ctx.accounts.winner;
-
-        // Ensure the game has ended
-        if game.state != GameState::Ended {
-            return Err(ErrorCode::GameNotEnded.into());
-        }
-
-        // Ensure the caller is the declared winner
-        if game.winner.is_none() || game.winner.unwrap() != winner.key() {
-            return Err(ErrorCode::NotTheWinner.into());
-        }
-
-        // Transfer the pot amount from the game account to the winner
-        system_program::transfer(
-            CpiContext::new(
-                ctx.accounts.system_program.to_account_info(),
-                system_program::Transfer {
-                    from: game.to_account_info(),
-                    to: winner.to_account_info(),
-                },
-            ),
-            game.pot_amount,
-        )?;
-
-        msg!(
-            "Player {} claimed {} SOL winnings.",
-            winner.key(),
-            game.pot_amount
-        );
-
-        // Reset pot amount and mark game as claimed
-        game.pot_amount = 0;
-        game.state = GameState::Claimed; // Prevent multiple claims
-
-        Ok(())
-    }
-
-    // Instruction for players to claim their stake back if the game is a draw
-    pub fn claim_draw_stake(ctx: Context<ClaimDrawStake>) -> Result<()> {
-        let game = &mut ctx.accounts.game;
-        let player = &mut ctx.accounts.player;
-
-        // Ensure the game is a draw
-        if game.state != GameState::Draw {
-            return Err(ErrorCode::GameNotDraw.into());
-        }
-
-        // Ensure the caller is one of the players
-        if player.key() != game.player_one && player.key() != game.player_two {
-            return Err(ErrorCode::NotAPlayer.into());
-        }
-
-        // Calculate half the pot amount for each player
-        let half_pot = game.pot_amount / 2;
-
-        // Transfer stake back to the player
-        system_program::transfer(
-            CpiContext::new(
-                ctx.accounts.system_program.to_account_info(),
-                system_program::Transfer {
-                    from: game.to_account_info(),
-                    to: player.to_account_info(),
-                },
-            ),
-            half_pot,
-        )?;
-
-        msg!(
-            "Player {} claimed {} SOL back from draw.",
-            player.key(),
-            half_pot
-        );
-
-        // Update pot amount (remaining for the other player to claim)
-        game.pot_amount -= half_pot;
-
-        // If both players have claimed, set state to claimed
-        if game.pot_amount == 0 {
-            game.state = GameState::Claimed;
         }
 
         Ok(())
@@ -322,7 +302,7 @@ pub struct CreateGame<'info> {
 #[instruction(stake_amount: u64)]
 pub struct JoinGame<'info> {
     // Game account: Must be mutable to update its state and receive SOL
-    #[account(mut)]
+    #[account(mut, constraint = game.state == GameState::WaitingForPlayerTwo)]
     pub game: Account<'info, Game>,
     // Player two (signer and payer for their stake)
     #[account(mut)]
@@ -336,36 +316,15 @@ pub struct JoinGame<'info> {
 #[instruction(row: u8, col: u8)]
 pub struct MakeMove<'info> {
     // Game account: Must be mutable to update the board and turn
-    #[account(mut)]
+    #[account(mut, constraint = game.state == GameState::Playing)]
     pub game: Account<'info, Game>,
     // The player making the move (must be a signer)
     #[account(mut)]
-    // Player account needs to be mutable if we were to deduct gas fees or similar, though not strictly needed for just signing
     pub player: Signer<'info>,
-}
-
-// Context for the `claim_winnings` instruction
-#[derive(Accounts)]
-pub struct ClaimWinnings<'info> {
-    // Game account: Must be mutable to transfer SOL out and update state
+    // The other player in the game
+    /// CHECK: Used to transfer SOL in case of a draw, forfeit, or win
     #[account(mut)]
-    pub game: Account<'info, Game>,
-    // The winner (recipient of SOL)
-    #[account(mut)]
-    pub winner: Signer<'info>, // Winner must sign to claim
-    // The system program
-    pub system_program: Program<'info, System>,
-}
-
-// Context for the `claim_draw_stake` instruction
-#[derive(Accounts)]
-pub struct ClaimDrawStake<'info> {
-    // Game account: Must be mutable to transfer SOL out and update state
-    #[account(mut)]
-    pub game: Account<'info, Game>,
-    // The player claiming their stake back
-    #[account(mut)]
-    pub player: Signer<'info>,
+    pub other: UncheckedAccount<'info>,
     // The system program
     pub system_program: Program<'info, System>,
 }
@@ -393,6 +352,7 @@ impl Game {
     // Option<Pubkey>: 32 bytes (Pubkey) + 1 byte (discriminator for Option) = 33 bytes
     const LEN: usize = 32 + 32 + 32 + (9 * (1 + 1)) + 1 + 8 + (32 + 1);
     pub const SEED_PREFIX: &'static [u8; 9] = b"tictactoe";
+    const FORFEIT: u8 = u8::MAX; // Special value to indicate a forfeit move
 }
 
 // Enum to represent the player's mark on the board
@@ -407,9 +367,8 @@ pub enum PlayerMark {
 pub enum GameState {
     WaitingForPlayerTwo,
     Playing,
-    Ended,   // Game ended with a winner
-    Draw,    // Game ended in a draw
-    Claimed, // Winnings have been claimed (or draw stakes claimed)
+    Ended, // Game ended with a winner
+    Draw,  // Game ended in a draw
 }
 
 // Custom error codes for the program
@@ -439,4 +398,6 @@ pub enum ErrorCode {
     GameNotDraw,
     #[msg("You are not a player in this game.")]
     NotAPlayer,
+    #[msg("Internal error occurred.")]
+    InternalError, // Catch-all for unexpected errors
 }

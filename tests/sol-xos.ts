@@ -15,6 +15,9 @@ describe("sol-xos", () => {
   let wagerAmount = (1 * LAMPORTS_PER_SOL);
   const uniqueId = new anchor.BN(Date.now());
   const [pda] = PublicKey.findProgramAddressSync([Buffer.from('tictactoe'), wallet.publicKey.toBuffer(), uniqueId.toBuffer("le", 8)], program.programId);
+  let p1InitBalance: number;
+  let p2InitBalance: number;
+  let approx_rent: number;
 
   before(async () => {
     const airdropSignature = await provider.connection.requestAirdrop(
@@ -23,8 +26,14 @@ describe("sol-xos", () => {
     );
     await provider.connection.confirmTransaction(airdropSignature, "confirmed");
     console.log("Airdrop confirmed.");
-    console.log(`Initial Player 2 Balance: ${await provider.connection.getBalance(playerTwo.publicKey)} LAMPORTS`);
+
+    p1InitBalance = await provider.connection.getBalance(wallet.publicKey)
+    p2InitBalance = await provider.connection.getBalance(playerTwo.publicKey)
+
     console.log(`--- Test Setup Complete ---\n`);
+    console.log(`Player 1 Balance: ${p1InitBalance} LAMPORTS`);
+    console.log(`Player 2 Balance: ${await provider.connection.getBalance(playerTwo.publicKey)} LAMPORTS`);
+    console.log(`Wager Amount: ${wagerAmount} LAMPORTS`);
   });
 
   beforeEach(async () => { });
@@ -38,12 +47,7 @@ describe("sol-xos", () => {
         playerOne: wallet.publicKey,
       })
       .signers([wallet.payer])
-      .rpc().catch((err) => {
-        getLogs(provider.connection, tx).then((logs) => {
-          console.log("Transaction logs:", logs);
-        });
-        throw err;
-      });
+      .rpc();
 
     expect(tx).to.be.a("string");
 
@@ -66,7 +70,7 @@ describe("sol-xos", () => {
     assert.equal(turn.toString(), p1.toString(), "Turn should be player 1");
     assert.isNull(winner, "Winner should be null at this point");
 
-    console.log(`Create Game Test: User: ${initBalance} -> ${endBalance} LAMPORTS, Game: 0 -> ${pot} LAMPORTS`);
+    approx_rent = initBalance - endBalance - wagerAmount;
   });
 
   it("should join an existing game", async () => {
@@ -105,11 +109,11 @@ describe("sol-xos", () => {
     assert.isTrue(state.playing ? true : false, "Game state should be playing");
     assert.equal(turn.toString(), p1.toString(), "Turn should be player 1");
     assert.isNull(winner, "Winner should be null at this point");
-
-    console.log(`Join Existing Game Test: User: ${initBalance} -> ${endBalance} LAMPORTS, Game: ${initPot} -> ${endPot} LAMPORTS`);
   });
 
   it("should play a move", async () => {
+    let game = program.account.game.fetch(pda);
+
     // Now, play a move
     const moveRow = 0;
     const moveCol = 0;
@@ -118,13 +122,14 @@ describe("sol-xos", () => {
       .accounts({
         player: wallet.publicKey,
         game: pda,
+        other: (await game).playerTwo,
       })
       .signers([wallet.payer])
       .rpc();
 
     expect(tx).to.be.a("string");
 
-    const game = program.account.game.fetch(pda);
+    game = program.account.game.fetch(pda);
     const pot = (await game).potAmount.toNumber();
     const p1 = (await game).playerOne;
     const p2 = (await game).playerTwo;
@@ -139,5 +144,85 @@ describe("sol-xos", () => {
     assert.isTrue(state.playing ? true : false, "Game state should be playing");
     assert.equal(turn.toString(), p2.toString(), "Turn should be player 2 now");
     assert.isNull(winner, "Winner should be null at this point");
+  });
+
+  it("player 1 should win the game", async () => {
+    let moveRow = 2;
+    let moveCol = 0;
+    let tx = await program.methods
+      .makeMove(moveRow, moveCol)
+      .accounts({
+        player: playerTwo.publicKey,
+        game: pda,
+        other: wallet.publicKey,
+      })
+      .signers([playerTwo])
+      .rpc();
+
+    moveRow = 0;
+    moveCol = 1;
+    tx = await program.methods
+      .makeMove(moveRow, moveCol)
+      .accounts({
+        player: wallet.publicKey,
+        game: pda,
+        other: playerTwo.publicKey,
+      })
+      .signers([wallet.payer])
+      .rpc();
+    expect(tx).to.be.a("string");
+
+    moveRow = 2;
+    moveCol = 1;
+    tx = await program.methods
+      .makeMove(moveRow, moveCol)
+      .accounts({
+        player: playerTwo.publicKey,
+        game: pda,
+        other: wallet.publicKey,
+      })
+      .signers([playerTwo])
+      .rpc();
+    expect(tx).to.be.a("string");
+
+    const initBalance = await provider.connection.getBalance(wallet.publicKey);
+    let game = program.account.game.fetch(pda);
+    const initPot = (await game).potAmount.toNumber();
+
+    moveRow = 0;
+    moveCol = 2;
+    tx = await program.methods
+      .makeMove(moveRow, moveCol)
+      .accounts({
+        player: wallet.publicKey,
+        game: pda,
+        other: playerTwo.publicKey,
+      })
+      .signers([wallet.payer])
+      .rpc();
+    expect(tx).to.be.a("string");
+
+    const gameAccountInfo = await program.provider.connection.getAccountInfo(pda);
+    const endBalance = await provider.connection.getBalance(wallet.publicKey);
+    const p2EndBalance = await provider.connection.getBalance(playerTwo.publicKey);
+    const balanceDif = endBalance - initBalance;
+    
+    // Assertions
+    assert.closeTo(balanceDif, initPot + approx_rent, LAMPORTS_PER_SOL * 0.00001, "Winner balance should increase by the pot amount + the returned rent");
+    assert.equal(p2EndBalance, p2InitBalance - wagerAmount, "Loser balance should decrease by the wager amount");
+    assert.isNull(gameAccountInfo, "Game account should be closed");
+  });
+
+  after(async () => {
+    const p1FinalBalance = await provider.connection.getBalance(wallet.publicKey);
+    const p2FinalBalance = await provider.connection.getBalance(playerTwo.publicKey);
+    const gain = p1FinalBalance - p1InitBalance;
+    const gasFees = wagerAmount - gain;
+
+    console.log(`--- Test Completed ---\n`);
+    console.log(`Final Player 1 Balance: ${p1FinalBalance} LAMPORTS`);
+    console.log(`Final Player 2 Balance: ${p2FinalBalance} LAMPORTS`);
+    console.log(`Final Gain: ${gain} LAMPORTS`);
+    console.log(`Final Gas Fees: ${gasFees} LAMPORTS`);
   });
 });

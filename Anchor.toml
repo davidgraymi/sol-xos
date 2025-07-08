@@ -16,4 +16,14 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
+# This script runs *before* 'anchor build' compiles your program
+prebuild = "echo 'Starting custom pre-build steps...' && cargo fmt -- --check"
+# This script runs *after* 'anchor build' compiles your program
+postbuild = "npm run copy-idl --prefix app"
+
+dev = "solana-test-validator & sleep 5 && anchor deploy && npm run dev --prefix app"
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+build-client = "npm run build --prefix app"
+dev-client = "npm run dev --prefix app"
+start-client = "npm run start --prefix app"

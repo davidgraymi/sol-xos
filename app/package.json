@@ -1,7 +1,11 @@
 {
-  "name": "app",
+  "name": "sol-xos",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "David Gray",
+    "email": "davidgraymi@gmail.com"
+  },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
     "@solana/wallet-adapter-react": "^0.15.39",
@@ -27,7 +31,10 @@
     "start": "REACT_APP_FAST_REFRESH=false react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
-    "eject": "react-app-rewired eject"
+    "eject": "react-app-rewired eject",
+    "dev": "npm run copy-idl && react-scripts start",
+    "prebuild": "npm run copy-idl",
+    "copy-idl": "shx cp ../target/idl/sol_xos.json src/sol_xos.json && shx cp ../target/types/sol_xos.ts src/types/sol_xos.ts"
   },
   "eslintConfig": {
     "extends": [
@@ -55,6 +62,7 @@
     "os-browserify": "^0.3.0",
     "process": "^0.11.10",
     "react-app-rewired": "^2.2.1",
+    "shx": "^0.4.0",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "url": "^0.11.4",

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, web3, BN, Address, IdlAccounts, IdlTypes } from '@coral-xyz/anchor';
-import idl from '../idl.json';
+import idl from '../sol_xos.json';
 import { PublicKey } from '@solana/web3.js';
 import type { SolXos } from '../types/sol_xos'; // Adjust path if different
 
