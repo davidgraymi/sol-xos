@@ -1,18 +1,18 @@
-const webpack = require('webpack');
-const path = require('path');
-const ModuleScopePlugin = require('react-dev-utils/ModuleScopePlugin'); // Import the plugin
+const webpack = require("webpack");
+const path = require("path");
+const ModuleScopePlugin = require("react-dev-utils/ModuleScopePlugin"); // Import the plugin
 
 module.exports = function override(config, env) {
   const fallback = config.resolve.fallback || {};
   Object.assign(fallback, {
-    "crypto": require.resolve("crypto-browserify"),
-    "stream": require.resolve("stream-browserify"),
-    "assert": require.resolve("assert"),
-    "http": require.resolve("stream-http"),
-    "https": require.resolve("https-browserify"),
-    "os": require.resolve("os-browserify"),
-    "url": require.resolve("url"),
-    "vm": require.resolve("vm-browserify")
+    crypto: require.resolve("crypto-browserify"),
+    stream: require.resolve("stream-browserify"),
+    assert: require.resolve("assert"),
+    http: require.resolve("stream-http"),
+    https: require.resolve("https-browserify"),
+    os: require.resolve("os-browserify"),
+    url: require.resolve("url"),
+    vm: require.resolve("vm-browserify"),
   });
   config.resolve.fallback = fallback;
 
@@ -33,7 +33,9 @@ module.exports = function override(config, env) {
 
   // *** Remove or modify ModuleScopePlugin ***
   // This is the key to allowing imports outside of src/
-  config.resolve.plugins = config.resolve.plugins.filter(plugin => !(plugin instanceof ModuleScopePlugin));
+  config.resolve.plugins = config.resolve.plugins.filter(
+    (plugin) => !(plugin instanceof ModuleScopePlugin)
+  );
 
   // --- Optional: Re-add the react-refresh include, though disabling ModuleScopePlugin usually makes this unnecessary ---
   // If you still see React Refresh related errors after disabling ModuleScopePlugin,
@@ -57,7 +59,6 @@ module.exports = function override(config, env) {
   //   console.warn("Could not find a 'oneOf' rule in Webpack config.");
   // }
   // --------------------------------------------------------------------------------------------------------------------
-
 
   // For ignoring source map warnings if they appear due to polyfills
   config.ignoreWarnings = [/Failed to parse source map/];

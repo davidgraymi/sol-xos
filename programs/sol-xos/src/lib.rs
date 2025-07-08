@@ -164,7 +164,6 @@ pub mod sol_xos {
         // Check for win condition
         if check_win(&game.board, mark) {
             game.winner = Some(player.key());
-            game.state = GameState::Ended;
 
             // Transfer the pot to the winner and close the game account
             let winner_account = player.to_account_info();
@@ -189,8 +188,6 @@ pub mod sol_xos {
                 pot
             );
         } else if check_draw(&game.board) {
-            game.state = GameState::Draw;
-
             // Divide the pot between both players
             let game_account = game.to_account_info();
 
@@ -225,6 +222,11 @@ pub mod sol_xos {
             };
         }
 
+        Ok(())
+    }
+
+    // Instruction for player one to leave the game before player two joins
+    pub fn leave_game(_ctx: Context<LeaveGame>) -> Result<()> {
         Ok(())
     }
 }
@@ -329,6 +331,20 @@ pub struct MakeMove<'info> {
     pub system_program: Program<'info, System>,
 }
 
+// Context for the `leave_game` instruction
+#[derive(Accounts)]
+#[instruction()]
+pub struct LeaveGame<'info> {
+    // Game account: Must be mutable to update its state and receive SOL
+    #[account(mut, constraint = game.state == GameState::WaitingForPlayerTwo, close = player_one)]
+    pub game: Account<'info, Game>,
+    // Player one
+    #[account(mut, address = game.player_one)]
+    pub player_one: Signer<'info>,
+    // The system program
+    pub system_program: Program<'info, System>,
+}
+
 // Define the `Game` account structure
 #[account]
 pub struct Game {
@@ -367,8 +383,6 @@ pub enum PlayerMark {
 pub enum GameState {
     WaitingForPlayerTwo,
     Playing,
-    Ended, // Game ended with a winner
-    Draw,  // Game ended in a draw
 }
 
 // Custom error codes for the program
