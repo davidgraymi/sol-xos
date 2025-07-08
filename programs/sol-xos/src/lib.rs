@@ -44,11 +44,6 @@ pub mod sol_xos {
         game.pot_amount = stake_amount;
         game.winner = None; // No winner yet
 
-        msg!(
-            "Game created by {} with stake {} SOL",
-            player_one.key(),
-            stake_amount
-        );
         Ok(())
     }
 
@@ -93,11 +88,6 @@ pub mod sol_xos {
         game.state = GameState::Playing;
         game.pot_amount += stake_amount; // Add player two's stake to the pot
 
-        msg!(
-            "Player {} joined the game. Total pot: {} SOL",
-            player_two.key(),
-            game.pot_amount
-        );
         Ok(())
     }
 
@@ -133,11 +123,6 @@ pub mod sol_xos {
                 PlayerMark::O => game.close(winner_account.clone())?,
             }
 
-            msg!(
-                "Player {} forfeited the game. Player {} wins!",
-                loser_account.key(),
-                winner_account.key()
-            );
             return Ok(());
         }
 
@@ -159,8 +144,6 @@ pub mod sol_xos {
         // Place the mark on the board
         game.board[row as usize][col as usize] = Some(mark);
 
-        msg!("Player {} made a move at ({}, {})", player.key(), row, col);
-
         // Check for win condition
         if check_win(&game.board, mark) {
             game.winner = Some(player.key());
@@ -169,8 +152,6 @@ pub mod sol_xos {
             let winner_account = player.to_account_info();
             let loser_account = other.to_account_info();
             let game_account = game.to_account_info();
-            // let system_program = ctx.accounts.system_program.to_account_info();
-            let pot = game.pot_amount;
 
             // Transfer the pot from game to winner
             game_account.sub_lamports(game.pot_amount)?;
@@ -181,12 +162,6 @@ pub mod sol_xos {
                 PlayerMark::X => game.close(winner_account)?,
                 PlayerMark::O => game.close(loser_account)?,
             }
-
-            msg!(
-                "Player {} won the game and received {} lamports!",
-                player.key(),
-                pot
-            );
         } else if check_draw(&game.board) {
             // Divide the pot between both players
             let game_account = game.to_account_info();
@@ -207,12 +182,6 @@ pub mod sol_xos {
                 PlayerMark::X => game.close(player.to_account_info())?,
                 PlayerMark::O => game.close(other.to_account_info())?,
             }
-
-            msg!(
-                "The game is a draw! Pot split between {} and {}",
-                game.player_one,
-                game.player_two
-            );
         } else {
             // Switch turns
             game.turn = if game.turn == game.player_one {

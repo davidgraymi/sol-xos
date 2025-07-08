@@ -1295,4 +1295,207 @@ describe("sol-xos", () => {
       );
     });
   });
+
+  describe("fails when unauthorized usser tries to leave the game", () => {
+    const playerOne: Keypair = Keypair.generate();
+    const playerTwo: Keypair = Keypair.generate();
+    let uniqueId = new anchor.BN(Date.now());
+    let [pda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("tictactoe"),
+        playerOne.publicKey.toBuffer(),
+        uniqueId.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+    let p1OriginBalance: number;
+    let p2OriginBalance: number;
+    let rentWhenCreating: number;
+    const wagerAmount: number = LAMPORTS_PER_SOL * 0.01;
+
+    before("get starting account balances", async () => {
+      let airdropSignature = await provider.connection.requestAirdrop(
+        playerOne.publicKey,
+        1 * LAMPORTS_PER_SOL // Airdrop 1 SOL for testing
+      );
+      await provider.connection.confirmTransaction(
+        airdropSignature,
+        "confirmed"
+      );
+
+      airdropSignature = await provider.connection.requestAirdrop(
+        playerTwo.publicKey,
+        1 * LAMPORTS_PER_SOL // Airdrop 1 SOL for testing
+      );
+      await provider.connection.confirmTransaction(
+        airdropSignature,
+        "confirmed"
+      );
+
+      p1OriginBalance = await provider.connection.getBalance(
+        playerOne.publicKey
+      );
+      p2OriginBalance = await provider.connection.getBalance(
+        playerTwo.publicKey
+      );
+
+      console.log(
+        `Player 1: ${playerOne.publicKey}, Balance: ${p1OriginBalance}`
+      );
+      console.log(
+        `Player 2: ${playerTwo.publicKey}, Balance: ${p2OriginBalance}`
+      );
+      console.log(`Wager: ${wagerAmount}`);
+    });
+
+    it("should create a new game", async () => {
+      const p1InitBalance = await provider.connection.getBalance(
+        playerOne.publicKey
+      );
+
+      const tx = await program.methods
+        .createGame(uniqueId, new anchor.BN(wagerAmount))
+        .accounts({
+          playerOne: playerOne.publicKey,
+        })
+        .signers([playerOne])
+        .rpc();
+
+      expect(tx).to.be.a("string");
+
+      // Get player 1 balance
+      const p1EndBalance = await provider.connection.getBalance(
+        playerOne.publicKey
+      );
+
+      // Get game state
+      const game = program.account.game.fetch(pda);
+      const pot = (await game).potAmount.toNumber();
+      const p1 = (await game).playerOne;
+      const p2 = (await game).playerTwo;
+      const state = (await game).state;
+      const turn = (await game).turn;
+      const winner = (await game).winner;
+
+      // Update how much rent cost the user
+      rentWhenCreating =
+        await provider.connection.getMinimumBalanceForRentExemption(
+          (
+            await provider.connection.getAccountInfo(pda)
+          ).data.length
+        );
+
+      // Assertions
+      assert.equal(
+        p1EndBalance,
+        p1InitBalance - wagerAmount - rentWhenCreating,
+        "Player 1 balance should decrease by the wager amount + rent"
+      );
+      assert.equal(
+        pot,
+        wagerAmount,
+        "Game account balance should increase by the exact wager amount"
+      );
+      assert.equal(
+        p1.toString(),
+        playerOne.publicKey.toString(),
+        "Player 1 should be the player 1 public key"
+      );
+      assert.equal(
+        p2.toString(),
+        PublicKey.default.toString(),
+        "Player 2 should be default (not joined yet)"
+      );
+      assert.isTrue(
+        state.waitingForPlayerTwo ? true : false,
+        "Game state should be waiting for player two"
+      );
+      assert.equal(turn.toString(), p1.toString(), "Turn should be player 1");
+      assert.isNull(winner, "Winner should be null at this point");
+    });
+
+    it("should not leave game", async () => {
+      let threw = false;
+
+      try {
+        await program.methods
+          .leaveGame()
+          .accounts({
+            playerOne: playerTwo.publicKey,
+            game: pda,
+          })
+          .signers([playerTwo])
+          .rpc();
+        assert.fail("Transaction should have failed but didn't");
+      } catch (err: any) {
+        threw = true;
+        // 🔍 Match the custom Anchor error
+        const errMsg = err.toString();
+        expect(errMsg).to.include("Error Code: ConstraintAddress.");
+      }
+
+      expect(threw).to.be.true;
+
+      const p1EndBalance = await provider.connection.getBalance(
+        playerOne.publicKey
+      );
+
+      // Get game state
+      const game = program.account.game.fetch(pda);
+      const pot = (await game).potAmount.toNumber();
+      const p1 = (await game).playerOne;
+      const p2 = (await game).playerTwo;
+      const state = (await game).state;
+      const turn = (await game).turn;
+      const winner = (await game).winner;
+
+      // Assertions
+      assert.equal(
+        p1EndBalance,
+        p1OriginBalance - wagerAmount - rentWhenCreating,
+        "Player 1 balance should be the same"
+      );
+      assert.equal(
+        pot,
+        wagerAmount,
+        "Game account balance should increase by the exact wager amount"
+      );
+      assert.equal(
+        p1.toString(),
+        playerOne.publicKey.toString(),
+        "Player 1 should be the player 1 public key"
+      );
+      assert.equal(
+        p2.toString(),
+        PublicKey.default.toString(),
+        "Player 2 should be default (not joined yet)"
+      );
+      assert.isTrue(
+        state.waitingForPlayerTwo ? true : false,
+        "Game state should be waiting for player two"
+      );
+      assert.equal(turn.toString(), p1.toString(), "Turn should be player 1");
+      assert.isNull(winner, "Winner should be null at this point");
+    });
+
+    after(async () => {
+      const p1FinalBalance = await provider.connection.getBalance(
+        playerOne.publicKey
+      );
+      const p2FinalBalance = await provider.connection.getBalance(
+        playerTwo.publicKey
+      );
+
+      console.log(
+        `Player 1: ${playerOne.publicKey}, Balance: ${p1FinalBalance}, Delta: ${
+          p1FinalBalance - p1OriginBalance
+        }`
+      );
+      console.log(
+        `Player 2: ${playerTwo.publicKey}, Balance: ${p2FinalBalance}, Delta: ${
+          p2FinalBalance - p2OriginBalance
+        }`
+      );
+    });
+  });
 });
