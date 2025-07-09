@@ -1,67 +1,73 @@
-const webpack = require("webpack");
-const path = require("path");
-const ModuleScopePlugin = require("react-dev-utils/ModuleScopePlugin"); // Import the plugin
+// app/config-overrides.js
+const webpack = require('webpack');
+const path = require('path');
 
 module.exports = function override(config, env) {
-  const fallback = config.resolve.fallback || {};
-  Object.assign(fallback, {
-    crypto: require.resolve("crypto-browserify"),
-    stream: require.resolve("stream-browserify"),
-    assert: require.resolve("assert"),
-    http: require.resolve("stream-http"),
-    https: require.resolve("https-browserify"),
-    os: require.resolve("os-browserify"),
-    url: require.resolve("url"),
-    vm: require.resolve("vm-browserify"),
-  });
-  config.resolve.fallback = fallback;
+    // Add fallbacks for Node.js core modules
+    config.resolve.fallback = {
+        ...config.resolve.fallback,
+        "crypto": require.resolve("crypto-browserify"),
+        "stream": require.resolve("stream-browserify"),
+        "buffer": require.resolve("buffer"),
+        "util": require.resolve("util"),
+        "assert": require.resolve("assert"),
+        "process": require.resolve("process/browser"),
+        "path": require.resolve("path-browserify"),
+        "os": false, // Fixed based on previous analysis
+        "url": require.resolve("url"),
+        "http": require.resolve("stream-http"),
+        "https": require.resolve("https-browserify"),
+    };
 
-  config.plugins = (config.plugins || []).concat([
-    new webpack.ProvidePlugin({
-      process: "process/browser",
-      Buffer: ["buffer", "Buffer"],
-    }),
-  ]);
+    // Add the Buffer and Process plugins for global access
+    config.plugins = (config.plugins || []).concat([
+        new webpack.ProvidePlugin({
+            process: 'process/browser',
+            Buffer: ['buffer', 'Buffer'],
+        }),
+    ]);
 
-  // Disable fully specified resolution for .js and .mjs files in node_modules
-  config.module.rules.push({
-    test: /\.m?js/,
-    resolve: {
-      fullySpecified: false,
-    },
-  });
+    // Set fullySpecified to false to allow bare imports to resolve without extensions
+    config.resolve.fullySpecified = false;
 
-  // *** Remove or modify ModuleScopePlugin ***
-  // This is the key to allowing imports outside of src/
-  config.resolve.plugins = config.resolve.plugins.filter(
-    (plugin) => !(plugin instanceof ModuleScopePlugin)
-  );
+    // Explicit aliases for process/browser and react-refresh/runtime
+    // MODIFIED: Adding more robust aliases for 'process'
+    config.resolve.alias = {
+        ...config.resolve.alias,
+        // Ensure all 'process' related imports map to the browser polyfill
+        'process/browser': path.resolve(__dirname, 'node_modules/process/browser.js'),
+        'process/browser.js': path.resolve(__dirname, 'node_modules/process/browser.js'), // Add this to catch explicit '.js' requests
+        'process': path.resolve(__dirname, 'node_modules/process/browser.js'),             // Add this for bare 'process' imports
+        'react-refresh/runtime': path.resolve(__dirname, 'node_modules/react-refresh/runtime.js'),
+    };
 
-  // --- Optional: Re-add the react-refresh include, though disabling ModuleScopePlugin usually makes this unnecessary ---
-  // If you still see React Refresh related errors after disabling ModuleScopePlugin,
-  // uncomment and verify this section. Otherwise, it might not be needed.
-  // const oneOfRule = config.module.rules.find((rule) => rule.oneOf);
-  // if (oneOfRule) {
-  //   const jsRule = oneOfRule.oneOf.find(
-  //     (rule) => rule.test && rule.test.toString().includes('js|mjs|jsx|ts|tsx') && rule.include && rule.include.includes(path.resolve(__dirname, 'src'))
-  //   );
-  //
-  //   if (jsRule) {
-  //     if (!Array.isArray(jsRule.include)) {
-  //       jsRule.include = [jsRule.include];
-  //     }
-  //     jsRule.include.push(path.resolve(__dirname, 'node_modules/react-refresh'));
-  //     console.log("Modified Babel loader include paths for src rule:", jsRule.include);
-  //   } else {
-  //     console.warn("Could not find the specific Babel loader rule for src/. React Refresh might not work correctly.");
-  //   }
-  // } else {
-  //   console.warn("Could not find a 'oneOf' rule in Webpack config.");
-  // }
-  // --------------------------------------------------------------------------------------------------------------------
+    // Disable symlink resolution.
+    config.resolve.symlinks = false;
 
-  // For ignoring source map warnings if they appear due to polyfills
-  config.ignoreWarnings = [/Failed to parse source map/];
+    // NEW: Find and modify the ModuleScopePlugin to explicitly allow react-refresh path
+    const ModuleScopePlugin = config.resolve.plugins.find(
+        (p) => p.constructor && p.constructor.name === "ModuleScopePlugin"
+    );
 
-  return config;
+    if (ModuleScopePlugin) {
+        // Add the direct path to react-refresh in your app's node_modules to allowedPaths.
+        // This is crucial because your alias is directing it here, but CRA's scope plugin
+        // might only be aware of react-scripts's internal node_modules path for react-refresh.
+        ModuleScopePlugin.allowedPaths.push(
+            path.resolve(__dirname, 'node_modules', 'react-refresh')
+        );
+        // Also add the specific runtime.js file path, just to be super explicit
+        ModuleScopePlugin.allowedPaths.push(
+            path.resolve(__dirname, 'node_modules', 'react-refresh', 'runtime.js')
+        );
+    } else {
+        console.warn("ModuleScopePlugin not found in resolve.plugins. This might indicate an unusual CRA setup.");
+    }
+
+    // IMPORTANT: Remove or comment out the console.log lines for the Webpack config dump now that you have it.
+    // console.log("--- STARTING WEBPACK CONFIG DUMP ---");
+    // console.log(JSON.stringify(config, null, 2));
+    // console.log("--- ENDING WEBPACK CONFIG DUMP ---");
+
+    return config;
 };

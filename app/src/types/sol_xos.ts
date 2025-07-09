@@ -14,64 +14,6 @@ export type SolXos = {
   },
   "instructions": [
     {
-      "name": "claimDrawStake",
-      "discriminator": [
-        28,
-        186,
-        145,
-        21,
-        60,
-        120,
-        237,
-        70
-      ],
-      "accounts": [
-        {
-          "name": "game",
-          "writable": true
-        },
-        {
-          "name": "player",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "claimWinnings",
-      "discriminator": [
-        161,
-        215,
-        24,
-        59,
-        14,
-        236,
-        242,
-        221
-      ],
-      "accounts": [
-        {
-          "name": "game",
-          "writable": true
-        },
-        {
-          "name": "winner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "createGame",
       "discriminator": [
         124,
@@ -170,6 +112,35 @@ export type SolXos = {
       ]
     },
     {
+      "name": "leaveGame",
+      "discriminator": [
+        218,
+        226,
+        6,
+        0,
+        243,
+        34,
+        125,
+        201
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "playerOne",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "makeMove",
       "discriminator": [
         78,
@@ -190,6 +161,14 @@ export type SolXos = {
           "name": "player",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "other",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -237,46 +216,26 @@ export type SolXos = {
     },
     {
       "code": 6003,
-      "name": "gameNotActive",
-      "msg": "The game is not active."
-    },
-    {
-      "code": 6004,
       "name": "notYourTurn",
       "msg": "It's not your turn."
     },
     {
-      "code": 6005,
+      "code": 6004,
       "name": "invalidMoveCoordinates",
       "msg": "Invalid move coordinates. Row and column must be between 0 and 2."
     },
     {
-      "code": 6006,
+      "code": 6005,
       "name": "cellAlreadyOccupied",
       "msg": "The selected cell is already occupied."
     },
     {
-      "code": 6007,
-      "name": "gameNotEnded",
-      "msg": "The game has not ended yet."
-    },
-    {
-      "code": 6008,
-      "name": "notTheWinner",
-      "msg": "You are not the winner of this game."
-    },
-    {
-      "code": 6009,
+      "code": 6006,
       "name": "zeroStakeNotAllowed",
       "msg": "Stake amount cannot be zero."
     },
     {
-      "code": 6010,
-      "name": "gameNotDraw",
-      "msg": "The game is not a draw."
-    },
-    {
-      "code": 6011,
+      "code": 6007,
       "name": "notAPlayer",
       "msg": "You are not a player in this game."
     }
@@ -350,15 +309,6 @@ export type SolXos = {
           },
           {
             "name": "playing"
-          },
-          {
-            "name": "ended"
-          },
-          {
-            "name": "draw"
-          },
-          {
-            "name": "claimed"
           }
         ]
       }

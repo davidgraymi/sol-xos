@@ -1,61 +1,80 @@
 // src/components/GameComponent.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Program, AnchorProvider, web3, BN, Address, IdlAccounts, IdlTypes } from '@coral-xyz/anchor';
+import { Program, AnchorProvider, web3, BN } from '@coral-xyz/anchor';
 import idl from '../sol_xos.json';
-import { PublicKey } from '@solana/web3.js';
-import type { SolXos } from '../types/sol_xos'; // Adjust path if different
+import { AccountInfo, PublicKey } from '@solana/web3.js';
+import type { SolXos } from '../types/sol_xos';
+import type { GameAccount } from '../types/derived';
 
 // Define the program ID from your IDL
 const PROGRAM_ID: PublicKey = new PublicKey(idl.address);
-
-type GameAccount = IdlAccounts<SolXos>['game'];
 
 const GameComponent: React.FC = () => {
   const wallet = useAnchorWallet();
   const { connection } = useConnection();
   const [program, setProgram] = useState<Program<SolXos> | null>(null);
-  const [gameId, setGameId] = useState<Address>(''); // For the unique game ID
+  const [gamePda, setGamePda] = useState<PublicKey>(PublicKey.default); // For the unique game ID
   const [gameAccount, setGameAccount] = useState<GameAccount | null>(null);
   const [stakeAmount, setStakeAmount] = useState<string>('0.01'); // Default stake in SOL
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
 
   useEffect(() => {
-    console.log("Attempting to initialize program...");
-    console.log("IDL loaded:", idl); // IMPORTANT: Check what 'idl' actually contains
-    console.log("Program ID from IDL:", idl.address); // IMPORTANT: Verify program address
-
     if (wallet && connection) {
       try {
         const provider = new AnchorProvider(connection, wallet, AnchorProvider.defaultOptions());
         const program = new Program<SolXos>(idl as SolXos, provider);
         setProgram(program);
-        console.log("Program initialized successfully.");
       } catch (e) {
         console.error("Error initializing Anchor program:", e);
-        // You might see the 'kind' error here in the console, indicating the IDL issue
       }
     }
   }, [wallet, connection]);
 
-  const fetchGame = useCallback(async () => {
-    if (!program || !gameId || !wallet?.publicKey) return;
-
-    try {
-      const account = await program.account.game.fetch(gameId);
-      setGameAccount(account as GameAccount);
-      console.log('Fetched game account:', account);
-    } catch (error) {
-      console.error('Error fetching game:', error);
-      // setGameAccount(null);
-    }
-  }, [program, gameId, wallet]);
-
-  // Refetch game data periodically or after transactions
   useEffect(() => {
-    const interval = setInterval(fetchGame, 1000); // Fetch every 5 seconds
-    return () => clearInterval(interval);
-  }, [fetchGame]);
+    let listenerId: number;
+
+    const subscribe = async () => {
+      // Fetch the initial account data
+      if (program !== null && gamePda !== PublicKey.default) {
+        try {
+
+          const updatedGameAccount = await program.account.game.fetch(gamePda);
+          setGameAccount(updatedGameAccount);
+
+        } catch (e) {
+          console.warn("Game not found initially");
+        }
+
+        // Subscribe to account changes
+        listenerId = connection.onAccountChange(
+          gamePda,
+          async (accountInfo: AccountInfo<Buffer> | null) => {
+            if (!accountInfo || accountInfo.data.length === 0) {
+              setGameAccount(null);
+              return;
+            }
+
+            try {
+              const decoded = program.coder.accounts.decode("game", accountInfo.data);
+              setGameAccount(decoded);
+            } catch (err) {
+              console.error("Failed to decode game data", err);
+            }
+          },
+          "confirmed"
+        );
+      }
+    };
+
+    subscribe();
+
+    return () => {
+      if (listenerId !== undefined) {
+        connection.removeAccountChangeListener(listenerId);
+      }
+    };
+  }, [connection, program, gamePda]);
 
   const handleCreateGame = async () => {
     if (!program || !wallet?.publicKey || !stakeAmount) return;
@@ -71,17 +90,16 @@ const GameComponent: React.FC = () => {
         })
         .rpcAndKeys();
 
-      setGameId(tx.pubkeys.game); // Store the unique ID to fetch the game
+      setGamePda(tx.pubkeys.game); // Store the unique ID to fetch the game
       alert('Game created successfully!');
-      fetchGame();
     } catch (error) {
       console.error('Error creating game:', error);
-      alert('Failed to create game. Check console for details.');
+      alert('Failed to create game.');
     }
   };
 
   const handleJoinGame = async () => {
-    if (!program || !wallet?.publicKey || !gameId || !stakeAmount) return;
+    if (!program || !wallet?.publicKey || gamePda === PublicKey.default || !stakeAmount) return;
 
     try {
       const stakeLamports = new BN(parseFloat(stakeAmount) * web3.LAMPORTS_PER_SOL);
@@ -89,13 +107,12 @@ const GameComponent: React.FC = () => {
       await program.methods
         .joinGame(stakeLamports)
         .accounts({
-          game: gameId,
+          game: gamePda,
           playerTwo: wallet.publicKey,
         })
         .rpc();
 
       alert('Game joined successfully!');
-      fetchGame();
     } catch (error) {
       console.error('Error joining game:', error);
       alert('Failed to join game. Check console for details.');
@@ -103,78 +120,29 @@ const GameComponent: React.FC = () => {
   };
 
   const handleMakeMove = async () => {
-    if (!program || !wallet?.publicKey || !gameId || !selectedCell) return;
+    if (!program || !wallet?.publicKey || gamePda === PublicKey.default || !selectedCell || !gameAccount) return;
 
     try {
       await program.methods
         .makeMove(selectedCell.row, selectedCell.col)
         .accounts({
-          game: gameId,
+          game: gamePda,
           player: wallet.publicKey,
+          other: gameAccount.playerTwo,
         })
         .rpc();
 
       alert(`Move made at (${selectedCell.row}, ${selectedCell.col})!`);
       setSelectedCell(null); // Clear selection
-      fetchGame();
     } catch (error) {
       console.error('Error making move:', error);
       alert('Failed to make move. Check console for details.');
     }
   };
 
-  const handleClaimWinnings = async () => {
-    if (!program || !wallet?.publicKey || !gameId) return;
-
-    try {
-      await program.methods
-        .claimWinnings()
-        .accounts({
-          game: gameId,
-          winner: wallet.publicKey,
-        })
-        .rpc();
-
-      alert('Winnings claimed successfully!');
-      fetchGame();
-    } catch (error) {
-      console.error('Error claiming winnings:', error);
-      alert('Failed to claim winnings. Check console for details.');
-    }
-  };
-
-  const handleClaimDrawStake = async () => {
-    if (!program || !wallet?.publicKey || !gameId) return;
-
-    try {
-      await program.methods
-        .claimDrawStake()
-        .accounts({
-          game: gameId,
-          player: wallet.publicKey,
-        })
-        .rpc();
-
-      alert('Draw stake claimed successfully!');
-      fetchGame();
-    } catch (error) {
-      console.error('Error claiming draw stake:', error);
-      alert('Failed to claim draw stake. Check console for details.');
-    }
-  };
-
-  const getPlayerMark = (mark: number | null) => {
-    if (mark === 0) return 'X';
-    if (mark === 1) return 'O';
-    return '';
-  };
-
   const getGameState = (state: GameAccount['state']) => {
     if (state.waitingForPlayerTwo) return 'Waiting for Player Two';
     if (state.playing) return 'Playing';
-    if (state.ended) return 'Ended';
-    if (state.draw) return 'Draw';
-    if (state.claimed) return 'Claimed';
     return 'Unknown';
   };
 
@@ -193,9 +161,9 @@ const GameComponent: React.FC = () => {
                 Game ID (for joining/fetching existing):
                 <input
                   type="text"
-                  value={gameId.toString()}
-                  onChange={(e) => setGameId(e.target.value)}
-                  placeholder="Enter Game ID or leave blank for new"
+                  value={gamePda === PublicKey.default ? '' : gamePda.toString()}
+                  onChange={(e) => setGamePda(new PublicKey(e.target.value === PublicKey.default.toString() ? '' : e.target.value ))}
+                  placeholder="Enter Game ID to join a game or leave blank to create a new one"
                   style={{ marginLeft: '10px', width: '200px' }}
                 />
               </label>
@@ -215,19 +183,17 @@ const GameComponent: React.FC = () => {
             <button onClick={handleCreateGame} disabled={!program}>
               Create Game
             </button>
-            <button onClick={handleJoinGame} disabled={!program || !gameId}>
+            <button onClick={handleJoinGame} disabled={!program || gamePda === PublicKey.default}>
               Join Game
-            </button>
-            <button onClick={fetchGame} disabled={!program || !gameId}>
-              Fetch Game Data
             </button>
           </div>
 
           {gameAccount && (
+
             <div style={{ border: '1px solid #ccc', padding: '15px', marginBottom: '20px' }}>
               <h3>Current Game State</h3>
               <p>
-                <strong>Game ID:</strong> {gameId.toString()}
+                <strong>Game ID:</strong> {gamePda?.toString()}
               </p>
               <p>
                 <strong>Player One:</strong> {gameAccount.playerOne.toBase58()}
@@ -285,8 +251,8 @@ const GameComponent: React.FC = () => {
                             ? 'pointer'
                             : 'default',
                         backgroundColor: selectedCell?.row === rowIndex && selectedCell?.col === colIndex
-                            ? 'lightblue'
-                            : 'white',
+                          ? 'lightblue'
+                          : 'white',
                       }}
                       onClick={() => {
                         if (
@@ -314,28 +280,6 @@ const GameComponent: React.FC = () => {
               </button>
 
               <hr style={{ margin: '15px 0' }} />
-
-              <button
-                onClick={handleClaimWinnings}
-                disabled={
-                  !program ||
-                  !gameAccount.state.ended ||
-                  gameAccount.winner?.toBase58() !== wallet.publicKey.toBase58()
-                }
-              >
-                Claim Winnings
-              </button>
-              <button
-                onClick={handleClaimDrawStake}
-                disabled={
-                  !program ||
-                  !gameAccount.state.draw ||
-                  (gameAccount.playerOne.toBase58() !== wallet.publicKey.toBase58() &&
-                    gameAccount.playerTwo.toBase58() !== wallet.publicKey.toBase58())
-                }
-              >
-                Claim Draw Stake
-              </button>
             </div>
           )}
         </>

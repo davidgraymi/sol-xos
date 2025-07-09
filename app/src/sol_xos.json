@@ -8,64 +8,6 @@
   },
   "instructions": [
     {
-      "name": "claim_draw_stake",
-      "discriminator": [
-        28,
-        186,
-        145,
-        21,
-        60,
-        120,
-        237,
-        70
-      ],
-      "accounts": [
-        {
-          "name": "game",
-          "writable": true
-        },
-        {
-          "name": "player",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "claim_winnings",
-      "discriminator": [
-        161,
-        215,
-        24,
-        59,
-        14,
-        236,
-        242,
-        221
-      ],
-      "accounts": [
-        {
-          "name": "game",
-          "writable": true
-        },
-        {
-          "name": "winner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "create_game",
       "discriminator": [
         124,
@@ -164,6 +106,35 @@
       ]
     },
     {
+      "name": "leave_game",
+      "discriminator": [
+        218,
+        226,
+        6,
+        0,
+        243,
+        34,
+        125,
+        201
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "player_one",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "make_move",
       "discriminator": [
         78,
@@ -184,6 +155,14 @@
           "name": "player",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "other",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -231,46 +210,26 @@
     },
     {
       "code": 6003,
-      "name": "GameNotActive",
-      "msg": "The game is not active."
-    },
-    {
-      "code": 6004,
       "name": "NotYourTurn",
       "msg": "It's not your turn."
     },
     {
-      "code": 6005,
+      "code": 6004,
       "name": "InvalidMoveCoordinates",
       "msg": "Invalid move coordinates. Row and column must be between 0 and 2."
     },
     {
-      "code": 6006,
+      "code": 6005,
       "name": "CellAlreadyOccupied",
       "msg": "The selected cell is already occupied."
     },
     {
-      "code": 6007,
-      "name": "GameNotEnded",
-      "msg": "The game has not ended yet."
-    },
-    {
-      "code": 6008,
-      "name": "NotTheWinner",
-      "msg": "You are not the winner of this game."
-    },
-    {
-      "code": 6009,
+      "code": 6006,
       "name": "ZeroStakeNotAllowed",
       "msg": "Stake amount cannot be zero."
     },
     {
-      "code": 6010,
-      "name": "GameNotDraw",
-      "msg": "The game is not a draw."
-    },
-    {
-      "code": 6011,
+      "code": 6007,
       "name": "NotAPlayer",
       "msg": "You are not a player in this game."
     }
@@ -344,15 +303,6 @@
           },
           {
             "name": "Playing"
-          },
-          {
-            "name": "Ended"
-          },
-          {
-            "name": "Draw"
-          },
-          {
-            "name": "Claimed"
           }
         ]
       }

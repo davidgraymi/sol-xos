@@ -363,24 +363,14 @@ pub enum ErrorCode {
     CannotJoinOwnGame,
     #[msg("The stake amount does not match the initial stake.")]
     StakeMismatch,
-    #[msg("The game is not active.")]
-    GameNotActive,
     #[msg("It's not your turn.")]
     NotYourTurn,
     #[msg("Invalid move coordinates. Row and column must be between 0 and 2.")]
     InvalidMoveCoordinates,
     #[msg("The selected cell is already occupied.")]
     CellAlreadyOccupied,
-    #[msg("The game has not ended yet.")]
-    GameNotEnded,
-    #[msg("You are not the winner of this game.")]
-    NotTheWinner,
     #[msg("Stake amount cannot be zero.")]
     ZeroStakeNotAllowed,
-    #[msg("The game is not a draw.")]
-    GameNotDraw,
     #[msg("You are not a player in this game.")]
     NotAPlayer,
-    #[msg("Internal error occurred.")]
-    InternalError, // Catch-all for unexpected errors
 }
