@@ -5,4 +5,4 @@ node_modules
 dist
 build
 test-ledger
-app/src/types/sol_xos.ts
+src/types/sol_xos.ts

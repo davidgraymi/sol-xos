@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Program, AnchorProvider, web3 } from '@coral-xyz/anchor';
-import idl from '../sol_xos.json';
-import { AccountInfo, PublicKey } from '@solana/web3.js';
-import type { SolXos } from '../types/sol_xos';
-import type { GameAccount } from '../types/derived';
+import React, { useState, useEffect } from "react";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { Program, AnchorProvider, web3 } from "@coral-xyz/anchor";
+import idl from "../sol_xos.json";
+import { AccountInfo, PublicKey } from "@solana/web3.js";
+import type { SolXos } from "../types/sol_xos";
+import type { GameAccount } from "../types/derived";
 
 interface GameComponentProps {
   gamePda: PublicKey;
@@ -16,12 +16,19 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
   const { connection } = useConnection();
   const [program, setProgram] = useState<Program<SolXos> | null>(null);
   const [gameAccount, setGameAccount] = useState<GameAccount | null>(null);
-  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
 
   useEffect(() => {
     if (wallet && connection) {
       try {
-        const provider = new AnchorProvider(connection, wallet, AnchorProvider.defaultOptions());
+        const provider = new AnchorProvider(
+          connection,
+          wallet,
+          AnchorProvider.defaultOptions()
+        );
         const program = new Program<SolXos>(idl as SolXos, provider);
         setProgram(program);
       } catch (e) {
@@ -50,7 +57,10 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
               return;
             }
             try {
-              const decoded = program.coder.accounts.decode("game", accountInfo.data);
+              const decoded = program.coder.accounts.decode(
+                "game",
+                accountInfo.data
+              );
               setGameAccount(decoded);
             } catch (err) {
               setGameAccount(null);
@@ -78,16 +88,15 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
         .accounts({
           game: gamePda,
           player: wallet.publicKey,
-          other:
-            wallet.publicKey.equals(gameAccount?.playerOne)
-              ? gameAccount.playerTwo
-              : gameAccount.playerOne,
+          other: wallet.publicKey.equals(gameAccount?.playerOne)
+            ? gameAccount.playerTwo
+            : gameAccount.playerOne,
         })
         .rpc();
       setSelectedCell(null);
     } catch (error) {
-      alert('Failed to make move.');
-      console.error('Error making move:', error);
+      alert("Failed to make move.");
+      console.error("Error making move:", error);
     }
   };
 
@@ -98,13 +107,13 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
         .leaveGame()
         .accounts({
           game: gamePda,
-          playerOne: wallet.publicKey
+          playerOne: wallet.publicKey,
         })
         .rpc();
       onBack();
     } catch (error) {
-      alert('Failed to leave game.');
-      console.error('Error leaving game:', error);
+      alert("Failed to leave game.");
+      console.error("Error leaving game:", error);
     }
   };
 
@@ -123,104 +132,160 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
         .rpc();
       onBack();
     } catch (error) {
-      alert('Failed to leave game.');
-      console.error('Error leaving game:', error);
+      alert("Failed to leave game.");
+      console.error("Error leaving game:", error);
     }
   };
 
-  const getGameState = (state: GameAccount['state']) => {
-    if (state.waitingForPlayerTwo) return 'Waiting for Player Two';
-    if (state.playing) return 'Playing';
-    return 'Unknown';
+  const getGameState = (state: GameAccount["state"]) => {
+    if (state.waitingForPlayerTwo) return "Waiting for Player Two";
+    if (state.playing) return "Playing";
+    return "Unknown";
   };
 
   const renderCell = (cell: any) => {
     if (cell?.x) return <span style={{ color: "#ff6600" }}>X</span>;
     if (cell?.o) return <span style={{ color: "#00bfff" }}>O</span>;
-    return '';
+    return "";
   };
 
-  const isGameOwner = (userPub: PublicKey | undefined, gameData: GameAccount) => {
-    return (userPub?.toBase58() === gameData.playerOne.toBase58());
+  const isGameOwner = (
+    userPub: PublicKey | undefined,
+    gameData: GameAccount
+  ) => {
+    return userPub?.toBase58() === gameData.playerOne.toBase58();
   };
 
-  const isGamePlayer = (userPub: PublicKey | undefined, gameData: GameAccount) => {
-    return (userPub?.toBase58() === gameData.playerOne.toBase58() || userPub?.toBase58() === gameData.playerTwo.toBase58());
+  const isGamePlayer = (
+    userPub: PublicKey | undefined,
+    gameData: GameAccount
+  ) => {
+    return (
+      userPub?.toBase58() === gameData.playerOne.toBase58() ||
+      userPub?.toBase58() === gameData.playerTwo.toBase58()
+    );
   };
 
   return (
-    <div style={{
-      background: "#181818",
-      color: "#fff",
-      borderRadius: 10,
-      padding: 24,
-      maxWidth: 620,
-      margin: "32px auto",
-      boxShadow: "0 2px 16px #0008"
-    }}>
-      <button onClick={onBack} style={{
-        background: "#333",
+    <div
+      style={{
+        background: "#181818",
         color: "#fff",
-        border: "none",
-        borderRadius: 5,
-        padding: "8px 16px",
-        marginBottom: 16,
-        cursor: "pointer"
-      }}>
-        ← Back to Lobby
-      </button>
-      {(gameAccount && isGameOwner(wallet?.publicKey, gameAccount) && gameAccount.state.waitingForPlayerTwo) ?
-        <button onClick={handleLeaveGame} style={{
+        borderRadius: 10,
+        padding: 24,
+        maxWidth: 620,
+        margin: "32px auto",
+        boxShadow: "0 2px 16px #0008",
+      }}
+    >
+      <button
+        onClick={onBack}
+        style={{
           background: "#333",
           color: "#fff",
           border: "none",
           borderRadius: 5,
           padding: "8px 16px",
           marginBottom: 16,
-          marginLeft: 16,
-          cursor: "pointer"
-        }}>
+          cursor: "pointer",
+        }}
+      >
+        ← Back to Lobby
+      </button>
+      {gameAccount &&
+      isGameOwner(wallet?.publicKey, gameAccount) &&
+      gameAccount.state.waitingForPlayerTwo ? (
+        <button
+          onClick={handleLeaveGame}
+          style={{
+            background: "#333",
+            color: "#fff",
+            border: "none",
+            borderRadius: 5,
+            padding: "8px 16px",
+            marginBottom: 16,
+            marginLeft: 16,
+            cursor: "pointer",
+          }}
+        >
           Leave Game
         </button>
-        : (gameAccount && isGamePlayer(wallet?.publicKey, gameAccount) && gameAccount.state.playing) &&
-        <button onClick={handleForfeit} style={{
-          background: "red",
-          color: "#fff",
-          border: "none",
-          borderRadius: 5,
-          padding: "8px 16px",
-          marginBottom: 16,
-          marginLeft: 16,
-          cursor: "pointer"
-        }}>
-          Forfeit
-        </button>
-      }
+      ) : (
+        gameAccount &&
+        isGamePlayer(wallet?.publicKey, gameAccount) &&
+        gameAccount.state.playing && (
+          <button
+            onClick={handleForfeit}
+            style={{
+              background: "red",
+              color: "#fff",
+              border: "none",
+              borderRadius: 5,
+              padding: "8px 16px",
+              marginBottom: 16,
+              marginLeft: 16,
+              cursor: "pointer",
+            }}
+          >
+            Forfeit
+          </button>
+        )
+      )}
       <h2 style={{ textAlign: "center" }}>Tic-Tac-Toe Game</h2>
       {!wallet?.publicKey && <p>Please connect your wallet to interact.</p>}
       {gameAccount ? (
         <>
           <div style={{ marginBottom: 16 }}>
-            <div><b>Game ID:</b> {gamePda.toBase58()}</div>
-            <div><b>Player One:</b> {gameAccount.playerOne.toBase58()}</div>
-            <div><b>Player Two:</b> {gameAccount.playerTwo.toBase58() === PublicKey.default.toBase58() ? "None" : gameAccount.playerTwo.toBase58()}</div>
-            <div><b>Pot:</b> {gameAccount.potAmount.toNumber().toString() + " (" + (gameAccount.potAmount.toNumber() / web3.LAMPORTS_PER_SOL).toString() + "SOL)"}</div>
-            <div><b>State:</b> {getGameState(gameAccount.state)}</div>
-            <div><b>Current Turn:</b> {gameAccount.turn.toBase58() === wallet?.publicKey.toBase58() ? 'Yours' : 'Opponent'}</div>
-            <div><b>Winner:</b> {gameAccount.winner ? gameAccount.winner.toBase58() : "None"}</div>
+            <div>
+              <b>Game ID:</b> {gamePda.toBase58()}
+            </div>
+            <div>
+              <b>Player One:</b> {gameAccount.playerOne.toBase58()}
+            </div>
+            <div>
+              <b>Player Two:</b>{" "}
+              {gameAccount.playerTwo.toBase58() === PublicKey.default.toBase58()
+                ? "None"
+                : gameAccount.playerTwo.toBase58()}
+            </div>
+            <div>
+              <b>Pot:</b>{" "}
+              {gameAccount.potAmount.toNumber().toString() +
+                " (" +
+                (
+                  gameAccount.potAmount.toNumber() / web3.LAMPORTS_PER_SOL
+                ).toString() +
+                "SOL)"}
+            </div>
+            <div>
+              <b>State:</b> {getGameState(gameAccount.state)}
+            </div>
+            <div>
+              <b>Current Turn:</b>{" "}
+              {gameAccount.turn.toBase58() === wallet?.publicKey.toBase58()
+                ? "Yours"
+                : "Opponent"}
+            </div>
+            <div>
+              <b>Winner:</b>{" "}
+              {gameAccount.winner ? gameAccount.winner.toBase58() : "None"}
+            </div>
           </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 60px)',
-            gap: '8px',
-            justifyContent: 'center',
-            margin: '24px 0'
-          }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 60px)",
+              gap: "8px",
+              justifyContent: "center",
+              margin: "24px 0",
+            }}
+          >
             {gameAccount.board.map((row, rowIndex) =>
               row.map((cell, colIndex) => {
                 const isSelectable =
                   gameAccount.state.playing &&
-                  gameAccount.turn.toBase58() === wallet?.publicKey.toBase58() &&
+                  gameAccount.turn.toBase58() ===
+                    wallet?.publicKey.toBase58() &&
                   cell === null;
                 return (
                   <div
@@ -228,7 +293,11 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
                     style={{
                       width: 60,
                       height: 60,
-                      background: selectedCell?.row === rowIndex && selectedCell?.col === colIndex ? "#333" : "#222",
+                      background:
+                        selectedCell?.row === rowIndex &&
+                        selectedCell?.col === colIndex
+                          ? "#333"
+                          : "#222",
                       border: "2px solid #444",
                       borderRadius: 8,
                       display: "flex",
@@ -236,10 +305,11 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
                       justifyContent: "center",
                       fontSize: "2em",
                       cursor: isSelectable ? "pointer" : "default",
-                      transition: "background 0.2s"
+                      transition: "background 0.2s",
                     }}
                     onClick={() => {
-                      if (isSelectable) setSelectedCell({ row: rowIndex, col: colIndex });
+                      if (isSelectable)
+                        setSelectedCell({ row: rowIndex, col: colIndex });
                     }}
                   >
                     {renderCell(cell)}
@@ -253,7 +323,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
               Selected: ({selectedCell.row}, {selectedCell.col})
             </div>
           )}
-          {isGamePlayer(wallet?.publicKey, gameAccount) &&
+          {isGamePlayer(wallet?.publicKey, gameAccount) && (
             <div style={{ textAlign: "center" }}>
               <button
                 onClick={handleMakeMove}
@@ -274,17 +344,17 @@ const GameComponent: React.FC<GameComponentProps> = ({ gamePda, onBack }) => {
                   cursor: "pointer",
                   opacity:
                     !program ||
-                      !selectedCell ||
-                      !gameAccount.state.playing ||
-                      gameAccount.turn.toBase58() !== wallet?.publicKey.toBase58()
+                    !selectedCell ||
+                    !gameAccount.state.playing ||
+                    gameAccount.turn.toBase58() !== wallet?.publicKey.toBase58()
                       ? 0.5
-                      : 1
+                      : 1,
                 }}
               >
                 Make Move
               </button>
             </div>
-          }
+          )}
         </>
       ) : (
         <div style={{ textAlign: "center", margin: "32px 0" }}>

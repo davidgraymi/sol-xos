@@ -1,7 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { ConnectionProvider, useAnchorWallet, WalletProvider } from "@solana/wallet-adapter-react";
+import {
+  ConnectionProvider,
+  WalletProvider,
+} from "@solana/wallet-adapter-react";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import {
+  WalletModalProvider,
+  WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
 import { Connection, PublicKey } from "@solana/web3.js";
 import Lobby from "./components/Lobby";
 import GameComponent from "./components/GameComponent";
@@ -9,19 +15,22 @@ import CreateGameForm from "./components/CreateGameForm";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 
 // Default styles that can be overridden by your app
-import '@solana/wallet-adapter-react-ui/styles.css';
+import "@solana/wallet-adapter-react-ui/styles.css";
 
 type View = "lobby" | "create" | "game";
 
 function App() {
   const network = WalletAdapterNetwork.Devnet;
-  const connection = new Connection(network, "processed");
+  const connection = useMemo(
+    () => new Connection(network, "processed"),
+    [network]
+  );
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
       // Add more wallets as needed
     ],
-    [network]
+    []
   );
   const [selectedGame, setSelectedGame] = useState<PublicKey | null>(null);
   const [view, setView] = useState<View>("lobby");
@@ -36,21 +45,51 @@ function App() {
         await connection.getEpochInfo();
         if (!cancelled) setConnectionError(null);
       } catch (e) {
-        if (!cancelled) setConnectionError("Cannot connect to Solana localnet. Please ensure your validator is running.");
+        if (!cancelled)
+          setConnectionError(
+            "Cannot connect to Solana localnet. Please ensure your validator is running."
+          );
       }
     }
     checkConnection();
-    return () => { cancelled = true; };
-  }, [network]);
+    return () => {
+      cancelled = true;
+    };
+  }, [connection]);
 
   if (connectionError) {
     return (
-      <div style={{ background: "#111", minHeight: "100vh", color: "#fff", fontFamily: "sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ background: "#222", padding: 32, borderRadius: 12, boxShadow: "0 2px 16px #0008" }}>
+      <div
+        style={{
+          background: "#111",
+          minHeight: "100vh",
+          color: "#fff",
+          fontFamily: "sans-serif",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            background: "#222",
+            padding: 32,
+            borderRadius: 12,
+            boxShadow: "0 2px 16px #0008",
+          }}
+        >
           <h2>Connection Error</h2>
           <p>{connectionError}</p>
           <button
-            style={{ background: "#ff6600", color: "#fff", border: "none", borderRadius: 5, padding: "10px 24px", fontWeight: "bold", marginTop: 16 }}
+            style={{
+              background: "#ff6600",
+              color: "#fff",
+              border: "none",
+              borderRadius: 5,
+              padding: "10px 24px",
+              fontWeight: "bold",
+              marginTop: 16,
+            }}
             onClick={() => window.location.reload()}
           >
             Retry
@@ -64,15 +103,31 @@ function App() {
     <ConnectionProvider endpoint={connection.rpcEndpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <div style={{ background: "#111", minHeight: "100vh", color: "#fff", fontFamily: "sans-serif" }}>
+          <div
+            style={{
+              background: "#111",
+              minHeight: "100vh",
+              color: "#fff",
+              fontFamily: "sans-serif",
+            }}
+          >
             <div style={{ maxWidth: 900, margin: "0 auto", padding: 32 }}>
               <h1 style={{ textAlign: "center" }}>Solana Tic-Tac-Toe</h1>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginBottom: 24,
+                }}
+              >
                 <WalletMultiButton />
               </div>
               {view === "lobby" && (
                 <Lobby
-                  onSelectGame={(pda) => { setSelectedGame(pda); setView("game"); }}
+                  onSelectGame={(pda) => {
+                    setSelectedGame(pda);
+                    setView("game");
+                  }}
                   onCreateGame={() => setView("create")}
                 />
               )}
