@@ -33,7 +33,9 @@
     "test": "react-app-rewired test",
     "eject": "react-app-rewired eject",
     "dev": "react-app-rewired start",
-    "copy-idl": "shx cp ../target/idl/sol_xos.json src/sol_xos.json && shx cp ../target/types/sol_xos.ts src/types/sol_xos.ts"
+    "copy-idl": "shx cp ../target/idl/sol_xos.json src/sol_xos.json && shx cp ../target/types/sol_xos.ts src/types/sol_xos.ts",
+    "lint":"npx eslint .",
+    "lint-fix":"npx eslint . --fix"
   },
   "eslintConfig": {
     "extends": [

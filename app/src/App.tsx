@@ -5,7 +5,8 @@ import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-r
 import { Connection, PublicKey } from "@solana/web3.js";
 import Lobby from "./components/Lobby";
 import GameComponent from "./components/GameComponent";
-import CreateGameForm from "./components/CreateGameForm"; // You'll create this
+import CreateGameForm from "./components/CreateGameForm";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 
 // Default styles that can be overridden by your app
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -13,7 +14,7 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 type View = "lobby" | "create" | "game";
 
 function App() {
-  const network = "http://127.0.0.1:8899";
+  const network = WalletAdapterNetwork.Devnet;
   const connection = new Connection(network, "processed");
   const wallets = useMemo(
     () => [

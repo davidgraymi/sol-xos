@@ -62,7 +62,7 @@ const Lobby: React.FC<{
     if (!program || !wallet) return;
     try {
 
-      let tx = await program.methods
+      await program.methods
         .joinGame(stake)
         .accounts({
           game: gamePda,

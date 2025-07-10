@@ -6,8 +6,6 @@ import { AccountInfo, PublicKey } from '@solana/web3.js';
 import type { SolXos } from '../types/sol_xos';
 import type { GameAccount } from '../types/derived';
 
-const PROGRAM_ID: PublicKey = new PublicKey(idl.address);
-
 interface GameComponentProps {
   gamePda: PublicKey;
   onBack: () => void;
