@@ -17,6 +17,7 @@ module.exports = function override(config, env) {
     url: require.resolve("url"),
     http: require.resolve("stream-http"),
     https: require.resolve("https-browserify"),
+    vm: require.resolve("vm-browserify"),
   };
 
   // Add the Buffer and Process plugins for global access

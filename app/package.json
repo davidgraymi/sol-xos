@@ -28,16 +28,17 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "REACT_APP_FAST_REFRESH=false react-app-rewired start",
     "build": "react-app-rewired build",
-    "test": "react-app-rewired test",
-    "eject": "react-app-rewired eject",
-    "dev": "react-app-rewired start",
+    "build-ci": "CI=true npm run build",
     "copy-idl": "shx cp ../target/idl/sol_xos.json src/sol_xos.json && shx cp ../target/types/sol_xos.ts src/types/sol_xos.ts",
+    "dev": "react-app-rewired start",
+    "eject": "react-app-rewired eject",
+    "format": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" --check",
+    "format-fix": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" -w",
     "lint": "npx eslint . --ext .js --ext .ts --ext .tsx",
     "lint-fix": "npx eslint . --ext .js --ext .ts --ext .tsx --fix",
-    "format": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" --check",
-    "format-fix": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" -w"
+    "start": "REACT_APP_FAST_REFRESH=false react-app-rewired start",
+    "test": "react-app-rewired test"
   },
   "eslintConfig": {
     "extends": [
