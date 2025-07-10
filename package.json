@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "lint:fix": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" --check"
+    "format-fix": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" -w",
+    "format": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" --check"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
