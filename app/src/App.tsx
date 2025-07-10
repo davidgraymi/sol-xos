@@ -8,7 +8,7 @@ import {
   WalletModalProvider,
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import Lobby from "./components/Lobby";
 import GameComponent from "./components/GameComponent";
 import CreateGameForm from "./components/CreateGameForm";
@@ -20,10 +20,10 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 type View = "lobby" | "create" | "game";
 
 function App() {
-  const network = WalletAdapterNetwork.Devnet;
+  const endpoint = getSolanaEndpoint();
   const connection = useMemo(
-    () => new Connection(network, "processed"),
-    [network]
+    () => new Connection(endpoint, "processed"),
+    [endpoint]
   );
   const wallets = useMemo(
     () => [
@@ -152,6 +152,20 @@ function App() {
       </WalletProvider>
     </ConnectionProvider>
   );
+}
+
+function getSolanaEndpoint() {
+  const network = process.env.REACT_APP_SOLANA_NETWORK;
+  const validNetworks = Object.values(WalletAdapterNetwork);
+  if (network === "localnet") {
+    return "http://127.0.0.1:8899"
+  } else if (network && validNetworks.includes(network as WalletAdapterNetwork)) {
+    // Safe to cast
+    return clusterApiUrl(network as WalletAdapterNetwork);
+  } else {
+    // fallback
+    return clusterApiUrl(WalletAdapterNetwork.Devnet);
+  };
 }
 
 export default App;
