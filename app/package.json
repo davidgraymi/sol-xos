@@ -33,7 +33,6 @@
     "test": "react-app-rewired test",
     "eject": "react-app-rewired eject",
     "dev": "react-app-rewired start",
-    "prebuild": "npm run copy-idl",
     "copy-idl": "shx cp ../target/idl/sol_xos.json src/sol_xos.json && shx cp ../target/types/sol_xos.ts src/types/sol_xos.ts"
   },
   "eslintConfig": {
