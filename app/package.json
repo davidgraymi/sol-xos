@@ -6,7 +6,7 @@
     "name": "David Gray",
     "email": "davidgraymi@gmail.com"
   },
-  "homepage": "https://davidgray.github.io/sol-xos",
+  "homepage": "https://davidmgray.com/sol-xos/",
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
     "@solana/wallet-adapter-react": "^0.15.39",
