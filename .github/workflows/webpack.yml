@@ -10,20 +10,42 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-
     steps:
     - uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Node.js 22.x
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 22.x
 
     - name: Build
       run: |
         cd app
         npm install
         npm run build
+
+    - name: Upload production-ready build files
+      uses: actions/upload-artifact@v4
+      with:
+        name: build
+        path: app/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build
+        path: build
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build
