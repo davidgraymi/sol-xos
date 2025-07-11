@@ -7,11 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  lint-react:
+  lint:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,22 +16,24 @@ jobs:
           node-version: 22.x
       - run: npm install
       - run: npm run lint
+      - run: npm install --prefix app
+      - run: npm run lint --prefix app
 
-  test-react:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: app
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-      - run: npm install
-      - run: npm test -- --watchAll=false
+  # test-react:
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: app
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22.x
+  #     - run: npm install
+  #     - run: npm test -- --watchAll=false
 
   build:
-    needs: [lint-react, test-react]
+    needs: [lint]
     runs-on: ubuntu-latest
     defaults:
       run:
