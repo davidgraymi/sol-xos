@@ -43,13 +43,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
-      - run: |
-          npm install
-          REACT_APP_SOLANA_NETWORK=devnet npm run build
+      - run: npm install
+      - run: REACT_APP_SOLANA_NETWORK=devnet npm run build
       - uses: actions/upload-artifact@v4
         with:
           name: build
-          path: build
+          path: app/build
 
   deploy:
     needs: build
