@@ -1,0 +1,25 @@
+name: Anchor CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-cargo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo fmt --check
+
+  test-anchor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sh -c "$(curl -sSfL https://release.anchor.so/install.sh)"
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - run: anchor test
+        env:
+          CI: true
