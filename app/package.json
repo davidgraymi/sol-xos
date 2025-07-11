@@ -30,15 +30,15 @@
   },
   "scripts": {
     "build": "react-app-rewired build",
-    "build-ci": "REACT_APP_SOLANA_NETWORK=mainnet-beta CI=true npm run build",
+    "build-ci": "REACT_APP_SOLANA_NETWORK=devnet CI=true npm run build",
     "copy-idl": "shx cp ../target/idl/sol_xos.json src/sol_xos.json && shx cp ../target/types/sol_xos.ts src/types/sol_xos.ts",
-    "dev": "react-app-rewired start",
+    "dev": "REACT_APP_SOLANA_NETWORK=localnet react-app-rewired start",
     "eject": "react-app-rewired eject",
     "format": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" --check",
     "format-fix": "prettier */*.js \"*/**/*{.js,.ts,.tsx}\" -w",
     "lint": "npx eslint . --ext .js --ext .ts --ext .tsx",
     "lint-fix": "npx eslint . --ext .js --ext .ts --ext .tsx --fix",
-    "start": "REACT_APP_FAST_REFRESH=false react-app-rewired start",
+    "start": "REACT_APP_SOLANA_NETWORK=devnet REACT_APP_FAST_REFRESH=false react-app-rewired start",
     "test": "react-app-rewired test"
   },
   "eslintConfig": {
