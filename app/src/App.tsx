@@ -157,14 +157,18 @@ function App() {
 function getSolanaEndpoint() {
   const network = process.env.REACT_APP_SOLANA_NETWORK;
   if (network === "localnet") {
-    return "http://127.0.0.1:8899"
-  } else if (Object.values(WalletAdapterNetwork).includes(network as WalletAdapterNetwork)) {
+    return "http://127.0.0.1:8899";
+  } else if (
+    Object.values(WalletAdapterNetwork).includes(
+      network as WalletAdapterNetwork
+    )
+  ) {
     // Safe to cast
     return clusterApiUrl(network as WalletAdapterNetwork);
   } else {
     // fallback
     return clusterApiUrl(WalletAdapterNetwork.Devnet);
-  };
+  }
 }
 
 export default App;
