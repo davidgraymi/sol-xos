@@ -98,7 +98,9 @@ function App() {
         <WalletModalProvider>
           <div className="background-xo">
             <div className="main-container">
-              <h1 style={{ textAlign: "center", color: "white" }}>Solana Tic-Tac-Toe</h1>
+              <h1 style={{ textAlign: "center", color: "white" }}>
+                Solana Tic-Tac-Toe
+              </h1>
               <div className="wallet-btn-row">
                 <WalletMultiButton />
               </div>
