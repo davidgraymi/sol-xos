@@ -47,7 +47,7 @@ function App() {
       } catch (e) {
         if (!cancelled)
           setConnectionError(
-            "Cannot connect to Solana localnet. Please ensure your validator is running."
+            `Cannot connect to Solana ${process.env.REACT_APP_SOLANA_NETWORK} . Please ensure your validator is running.`
           );
       }
     }
@@ -59,23 +59,15 @@ function App() {
 
   if (connectionError) {
     return (
-      <div
-        style={{
-          background: "#111",
-          minHeight: "100vh",
-          color: "#fff",
-          fontFamily: "sans-serif",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <div className="background-xo">
         <div
           style={{
             background: "#222",
             padding: 32,
             borderRadius: 12,
             boxShadow: "0 2px 16px #0008",
+            maxWidth: 350,
+            margin: "auto",
           }}
         >
           <h2>Connection Error</h2>
@@ -95,6 +87,7 @@ function App() {
             Retry
           </button>
         </div>
+        <XOBackgroundStyles />
       </div>
     );
   }
@@ -103,23 +96,10 @@ function App() {
     <ConnectionProvider endpoint={connection.rpcEndpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <div
-            style={{
-              background: "#111",
-              minHeight: "100vh",
-              color: "#fff",
-              fontFamily: "sans-serif",
-            }}
-          >
-            <div style={{ maxWidth: 900, margin: "0 auto", padding: 32 }}>
-              <h1 style={{ textAlign: "center" }}>Solana Tic-Tac-Toe</h1>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  marginBottom: 24,
-                }}
-              >
+          <div className="background-xo">
+            <div className="main-container">
+              <h1 style={{ textAlign: "center", color: "white" }}>Solana Tic-Tac-Toe</h1>
+              <div className="wallet-btn-row">
                 <WalletMultiButton />
               </div>
               {view === "lobby" && (
@@ -147,6 +127,7 @@ function App() {
                 />
               )}
             </div>
+            <XOBackgroundStyles />
           </div>
         </WalletModalProvider>
       </WalletProvider>
@@ -169,6 +150,65 @@ function getSolanaEndpoint() {
     // fallback
     return clusterApiUrl(WalletAdapterNetwork.Devnet);
   }
+}
+
+// Add this component at the bottom of your file
+function XOBackgroundStyles() {
+  return (
+    <style>
+      {`
+      .background-xo {
+        min-height: 100vh;
+        min-width: 100vw;
+        position: relative;
+        overflow: hidden;
+        background: #111;
+        font-family: sans-serif;
+      }
+      .main-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 32px;
+        position: relative;
+        z-index: 1;
+        background: rgba(17,17,17,0.92);
+        border-radius: 18px;
+        box-shadow: 0 2px 16px #0008;
+      }
+      .wallet-btn-row {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 24px;
+      }
+      /* Responsive styles */
+      @media (max-width: 600px) {
+        .main-container {
+          padding: 12px;
+          max-width: 100vw;
+        }
+      }
+      /* XO background pattern */
+      .background-xo::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+          repeating-linear-gradient(135deg, transparent, transparent 80px, rgba(255,255,255,0.03) 80px, rgba(255,255,255,0.03) 160px),
+          url("data:image/svg+xml;utf8,<svg width='120' height='120' xmlns='http://www.w3.org/2000/svg'><text x='10' y='60' font-size='64' fill='rgba(255,255,255,0.08)'>X</text><text x='60' y='110' font-size='64' fill='rgba(255,255,255,0.08)'>O</text></svg>");
+        background-size: 240px 240px, 120px 120px;
+        background-repeat: repeat;
+        opacity: 1;
+        animation: xo-move 40s linear infinite;
+      }
+      @keyframes xo-move {
+        0% { background-position: 0 0, 0 0; }
+        100% { background-position: 240px 240px, 120px 120px; }
+      }
+      `}
+    </style>
+  );
 }
 
 export default App;
