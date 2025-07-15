@@ -12,7 +12,7 @@ sol_xos = "7z3jyerk9MU8GYZK5N3jja6q9zfCtCWEPk1JNh4htY3P"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
